@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Price Prediction</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="background-radial-glow"></div>
+    
+    <div class="card-container">
+        <h1 class="card-title">Car Price Prediction</h1>
+        
+        <form id="predictionForm" onsubmit="predictPrice(event)">
+            <div class="form-group">
+                <input type="number" step="any" id="presentPrice" placeholder="Present Price (in Lakhs)" required min="0">
+            </div>
+            
+            <div class="form-group">
+                <input type="number" id="kmsDriven" placeholder="Kilometers Driven" required min="0">
+            </div>
+            
+            <div class="form-group">
+                <input type="number" id="fuelType" placeholder="Fuel Type (0:Petrol, 1:Diesel, 2:CNG)" required min="0" max="2">
+            </div>
+            
+            <div class="form-group">
+                <input type="number" id="sellerType" placeholder="Seller Type (0:Dealer, 1:Individual)" required min="0" max="1">
+            </div>
+            
+            <div class="form-group">
+                <input type="number" id="transmission" placeholder="Transmission (0:Manual, 1:Auto)" required min="0" max="1">
+            </div>
+            
+            <div class="form-group">
+                <input type="number" id="owner" placeholder="Number of Previous Owners" required min="0">
+            </div>
+            
+            <div class="form-group">
+                <input type="number" step="any" id="age" placeholder="Age of Car (in years)" required min="0">
+            </div>
+            
+            <button type="submit" class="btn-predict">Predict Price</button>
+        </form>
+        
+        <div id="resultContainer" class="result-container hidden">
+            <span id="resultText">Estimated Car Price: ₹ <span id="predictedValue">0.00</span> Lakhs</span>
+        </div>
+        <div id="errorContainer" class="error-container hidden">
+            <span id="errorText"></span>
+        </div>
+    </div>
+
+    <script>
+        async function predictPrice(event) {
+            event.preventDefault();
+            
+            const presentPrice = document.getElementById('presentPrice').value;
+            const kmsDriven = document.getElementById('kmsDriven').value;
+            const fuelType = document.getElementById('fuelType').value;
+            const sellerType = document.getElementById('sellerType').value;
+            const transmission = document.getElementById('transmission').value;
+            const owner = document.getElementById('owner').value;
+            const age = document.getElementById('age').value;
+            
+            const submitBtn = document.querySelector('.btn-predict');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Predicting...';
+            
+            // Hide previous results or errors
+            const resultContainer = document.getElementById('resultContainer');
+            const errorContainer = document.getElementById('errorContainer');
+            resultContainer.classList.add('hidden');
+            errorContainer.classList.add('hidden');
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        present_price: presentPrice,
+                        kms_driven: kmsDriven,
+                        fuel_type: fuelType,
+                        seller_type: sellerType,
+                        transmission: transmission,
+                        owner: owner,
+                        age: age
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('predictedValue').textContent = data.prediction.toFixed(2);
+                    resultContainer.classList.remove('hidden');
+                } else {
+                    document.getElementById('errorText').textContent = data.error || 'An error occurred during prediction.';
+                    errorContainer.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('errorText').textContent = 'Could not connect to the server. Make sure the server is running.';
+                errorContainer.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Predict Price';
+            }
+        }
+    </script>
+</body>
+</html>
